@@ -54,7 +54,6 @@ public class TrainerWorkloadService {
             int month
     ) {
         TrainerWorkload workload = new TrainerWorkload();
-
         workload.setUsername(request.getUsername());
         workload.setFirstName(request.getFirstName());
         workload.setLastName(request.getLastName());
@@ -62,7 +61,6 @@ public class TrainerWorkloadService {
         workload.setYear(year);
         workload.setMonth(month);
         workload.setTotalDuration(0);
-
 
         log.info("workload created successfully: {} on date: {}",request.getUsername(),request.getTrainingDate());
         return workload;
