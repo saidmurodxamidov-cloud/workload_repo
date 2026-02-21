@@ -13,5 +13,5 @@ public class TrainerWorkloadResponse {
     private String lastName;
     private Boolean active;
 
-    Map<Integer,Map<String,Integer>> yearsSummary = new HashMap<>();
+    private Map<Integer,Map<String,Integer>> yearsSummary = new HashMap<>();
 }

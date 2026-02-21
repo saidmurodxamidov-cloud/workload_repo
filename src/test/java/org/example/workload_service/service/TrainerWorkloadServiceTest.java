@@ -5,6 +5,7 @@ import org.example.workload_service.dto.TrainerWorkloadRequest;
 import org.example.workload_service.dto.TrainerWorkloadResponse;
 import org.example.workload_service.entity.TrainerWorkload;
 import org.example.workload_service.respository.TrainerWorkloadRepository;
+import org.example.workload_service.service.impl.TrainerWorkloadServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,7 +29,9 @@ class TrainerWorkloadServiceTest {
     private TrainerWorkloadRepository repository;
 
     @InjectMocks
-    private TrainerWorkloadService service;
+    private TrainerWorkloadServiceImpl service;
+
+    private static final String IDEMPOTENCY_KEY = "test-uuid-1234";
 
     private TrainerWorkloadRequest request;
     private TrainerWorkload existingWorkload;
@@ -42,7 +46,6 @@ class TrainerWorkloadServiceTest {
         request.setTrainingDate(LocalDate.of(2024, 6, 15));
         request.setDuration(60);
         request.setActionType(ActionType.ADD);
-        request.setIdempotencyKey("test-uuid-1234");
 
         existingWorkload = new TrainerWorkload();
         existingWorkload.setUsername("john.doe");
@@ -51,13 +54,12 @@ class TrainerWorkloadServiceTest {
         existingWorkload.setTotalDuration(120);
     }
 
-    // ─── processWorkload ────────────────────────────────────────────────────────
 
     @Test
     void processWorkload_shouldSkip_whenDuplicateIdempotencyKey() {
-        when(repository.existsByIdempotencyKey("test-uuid-1234")).thenReturn(true);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(true);
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         verify(repository, never()).findByUsernameAndYearAndMonth(any(), anyInt(), anyInt());
         verify(repository, never()).save(any());
@@ -65,11 +67,11 @@ class TrainerWorkloadServiceTest {
 
     @Test
     void processWorkload_shouldProcess_whenIdempotencyKeyIsNew() {
-        when(repository.existsByIdempotencyKey("test-uuid-1234")).thenReturn(false);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(false);
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.of(existingWorkload));
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         verify(repository).save(existingWorkload);
         assertThat(existingWorkload.getTotalDuration()).isEqualTo(180); // 120 + 60
@@ -77,22 +79,22 @@ class TrainerWorkloadServiceTest {
 
     @Test
     void processWorkload_shouldProcess_whenIdempotencyKeyIsNull() {
-        request.setIdempotencyKey(null);
+        // null key → skip duplicate check, process normally
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.of(existingWorkload));
 
-        service.processWorkload(request);
+        service.processWorkload(null, request);
 
         verify(repository).save(existingWorkload);
     }
 
     @Test
     void processWorkload_shouldAddDuration_whenActionTypeIsAdd() {
-        when(repository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(false);
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.of(existingWorkload));
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         assertThat(existingWorkload.getTotalDuration()).isEqualTo(180); // 120 + 60
         verify(repository).save(existingWorkload);
@@ -101,11 +103,11 @@ class TrainerWorkloadServiceTest {
     @Test
     void processWorkload_shouldSubtractDuration_whenActionTypeIsDelete() {
         request.setActionType(ActionType.DELETE);
-        when(repository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(false);
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.of(existingWorkload));
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         assertThat(existingWorkload.getTotalDuration()).isEqualTo(60); // 120 - 60
         verify(repository).save(existingWorkload);
@@ -115,11 +117,11 @@ class TrainerWorkloadServiceTest {
     void processWorkload_shouldNotGoBelowZero_whenDeleteExceedsTotal() {
         request.setActionType(ActionType.DELETE);
         request.setDuration(200); // more than existing 120
-        when(repository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(false);
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.of(existingWorkload));
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         assertThat(existingWorkload.getTotalDuration()).isEqualTo(120); // unchanged
         verify(repository).save(existingWorkload);
@@ -127,11 +129,11 @@ class TrainerWorkloadServiceTest {
 
     @Test
     void processWorkload_shouldCreateNewWorkload_whenNoneExists() {
-        when(repository.existsByIdempotencyKey(any())).thenReturn(false);
+        when(repository.existsByIdempotencyKey(IDEMPOTENCY_KEY)).thenReturn(false);
         when(repository.findByUsernameAndYearAndMonth("john.doe", 2024, 6))
                 .thenReturn(Optional.empty());
 
-        service.processWorkload(request);
+        service.processWorkload(IDEMPOTENCY_KEY, request);
 
         verify(repository).save(argThat(saved ->
                 saved.getUsername().equals("john.doe") &&
@@ -141,7 +143,6 @@ class TrainerWorkloadServiceTest {
         ));
     }
 
-    // ─── getSummary ─────────────────────────────────────────────────────────────
 
     @Test
     void getSummary_shouldReturnNull_whenUsernameDoesNotExist() {
