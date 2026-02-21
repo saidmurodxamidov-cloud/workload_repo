@@ -13,7 +13,6 @@ import java.time.LocalDate;
 @ToString
 public class TrainerWorkloadRequest {
 
-    private String idempotencyKey;
     private String username;
     private String firstName;
     private String lastName;

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.workload_service.dto.TrainerWorkloadRequest;
 import org.example.workload_service.dto.TrainerWorkloadResponse;
 import org.example.workload_service.service.TrainerWorkloadService;
+import org.example.workload_service.service.impl.TrainerWorkloadServiceImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +17,11 @@ public class TrainerWorkloadController {
 
     @PostMapping
     public ResponseEntity<Void> updateWorkload(
+            @RequestHeader("Idempotency-Key") String key,
             @RequestBody TrainerWorkloadRequest request) {
-        service.processWorkload(request);
-        return ResponseEntity.ok().build();
+
+        service.processWorkload(key,request);
+        return ResponseEntity.noContent().build();
     }
     @GetMapping("/{username}")
     public ResponseEntity<?> getSummary(@PathVariable String username){
@@ -26,10 +29,5 @@ public class TrainerWorkloadController {
          if(res == null)
              return ResponseEntity.notFound().build();
          return ResponseEntity.ok().body(res);
-    }
-    @DeleteMapping
-    public  ResponseEntity<Void> deleteWorkload(@RequestBody TrainerWorkloadRequest request){
-        service.processWorkload(request);
-        return ResponseEntity.ok().build();
     }
 }
