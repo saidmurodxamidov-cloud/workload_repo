@@ -57,3 +57,9 @@ management:
     metrics:
       export:
         enabled: true
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [%X{traceId}] [%X{spanId}] [%X{username}] %msg%n"
+  level:
+    root: INFO
+    org.example: DEBUG
