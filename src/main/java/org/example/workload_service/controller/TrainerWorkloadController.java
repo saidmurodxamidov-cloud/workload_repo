@@ -15,14 +15,14 @@ public class TrainerWorkloadController {
 
     private final TrainerWorkloadService service;
 
-    @PostMapping
-    public ResponseEntity<Void> updateWorkload(
-            @RequestHeader("Idempotency-Key") String key,
-            @RequestBody TrainerWorkloadRequest request) {
-
-        service.processWorkload(key,request);
-        return ResponseEntity.noContent().build();
-    }
+//    @PostMapping
+//    public ResponseEntity<Void> updateWorkload(
+//            @RequestHeader("Idempotency-Key") String key,
+//            @RequestBody TrainerWorkloadRequest request) {
+//
+//        service.processWorkload(key,request);
+//        return ResponseEntity.noContent().build();
+//    }
     @GetMapping("/{username}")
     public ResponseEntity<?> getSummary(@PathVariable String username){
          TrainerWorkloadResponse res = service.getSummary(username);
