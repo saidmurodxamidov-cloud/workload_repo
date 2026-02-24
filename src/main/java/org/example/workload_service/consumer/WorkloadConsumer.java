@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.workload_service.dto.TrainerWorkloadRequest;
 import org.example.workload_service.service.TrainerWorkloadService;
+import org.slf4j.MDC;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
-// org.example.workload_service.consumer.WorkloadConsumer
+import java.util.UUID;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -21,12 +23,25 @@ public class WorkloadConsumer {
     public void onMessage(TrainerWorkloadRequest request, Message rawMessage)
             throws JMSException {
 
-        // same concept as @RequestHeader("Idempotency-Key") — just from JMS property
-        String idempotencyKey = rawMessage.getStringProperty("idempotencyKey");
+        try {
+            // Mirror of MdcFilter — restore the producer's trace context
+            String traceId        = rawMessage.getStringProperty("traceId");
+            String spanId         = rawMessage.getStringProperty("spanId");
+            String idempotencyKey = rawMessage.getStringProperty("idempotencyKey");
 
-        log.info("Message received. key={} action={}", idempotencyKey, request.getActionType());
+            MDC.put("requestId", UUID.randomUUID().toString());
+            if (traceId != null) MDC.put("traceId", traceId);
+            if (spanId  != null) MDC.put("spanId",  spanId);
 
-        // passes key + request exactly like the controller was doing before
-        service.processWorkload(idempotencyKey, request);
+            log.info("Message received. key={} action={}", idempotencyKey, request.getActionType());
+
+            service.processWorkload(idempotencyKey, request);
+
+        } finally {
+            // Always clean up — JMS threads are reused from a pool
+            MDC.remove("requestId");
+            MDC.remove("traceId");
+            MDC.remove("spanId");
+        }
     }
 }
