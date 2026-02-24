@@ -10,9 +10,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.support.converter.MessageConverter;   // ✅ correct import
+import org.springframework.jms.support.converter.MessageConverter;
 import org.springframework.jms.support.converter.MessageType;
-import org.springframework.jms.support.converter.MappingJackson2MessageConverter; // ✅ correct import
+import org.springframework.jms.support.converter.MappingJackson2MessageConverter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +31,7 @@ public class ActiveMQConfig {
         ActiveMQConnectionFactory factory =
                 new ActiveMQConnectionFactory(user, password, brokerUrl);
         factory.setTrustedPackages(List.of("org.example.dto", "org.example.client",
-                "org.example.workload_service.dto")); // ✅ added local dto package
+                "org.example.workload_service.dto"));
         return factory;
     }
 
@@ -41,7 +41,6 @@ public class ActiveMQConfig {
         converter.setTargetType(MessageType.TEXT);
         converter.setTypeIdPropertyName("_type");
 
-        // 1. Map the ID to the local class (Package names can be different!)
         Map<String, Class<?>> typeIdMappings = new HashMap<>();
         typeIdMappings.put("TrainerWorkloadRequest", org.example.workload_service.dto.TrainerWorkloadRequest.class);
         converter.setTypeIdMappings(typeIdMappings);
@@ -57,9 +56,9 @@ public class ActiveMQConfig {
 
     @Bean
     public JmsTemplate jmsTemplate(ActiveMQConnectionFactory connectionFactory,
-                                   MessageConverter messageConverter) { // ✅ injected converter
+                                   MessageConverter messageConverter) {
         JmsTemplate template = new JmsTemplate(connectionFactory);
-        template.setMessageConverter(messageConverter);               // ✅ wired explicitly
+        template.setMessageConverter(messageConverter);
         template.setDeliveryPersistent(true);
         template.setSessionTransacted(true);
         return template;
@@ -68,11 +67,11 @@ public class ActiveMQConfig {
     @Bean
     public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
             ActiveMQConnectionFactory connectionFactory,
-            MessageConverter messageConverter) {                      // ✅ injected converter
+            MessageConverter messageConverter) {
         DefaultJmsListenerContainerFactory factory =
                 new DefaultJmsListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(messageConverter);                // ✅ wired explicitly
+        factory.setMessageConverter(messageConverter);
         factory.setSessionTransacted(true);
         factory.setConcurrency("1-5");
         return factory;

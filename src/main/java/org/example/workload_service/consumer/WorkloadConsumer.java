@@ -24,7 +24,6 @@ public class WorkloadConsumer {
             throws JMSException {
 
         try {
-            // Mirror of MdcFilter — restore the producer's trace context
             String traceId        = rawMessage.getStringProperty("traceId");
             String spanId         = rawMessage.getStringProperty("spanId");
             String idempotencyKey = rawMessage.getStringProperty("idempotencyKey");
@@ -38,7 +37,6 @@ public class WorkloadConsumer {
             service.processWorkload(idempotencyKey, request);
 
         } finally {
-            // Always clean up — JMS threads are reused from a pool
             MDC.remove("requestId");
             MDC.remove("traceId");
             MDC.remove("spanId");
