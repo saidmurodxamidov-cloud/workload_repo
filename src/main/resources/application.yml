@@ -16,6 +16,17 @@ spring:
     hibernate:
       ddl-auto: update
 
+  activemq:
+    broker-url: ${SPRING_ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
+    user: admin
+    password: admin
+    packages:
+      trust-all: true
+
+app:
+  queue:
+    workload: workload.queue
+
   h2:
     console:
       enabled: true
