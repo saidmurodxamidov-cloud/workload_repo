@@ -3,6 +3,7 @@ package org.example.workload_service.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.RequiredArgsConstructor;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,16 +21,19 @@ import java.util.Map;
 
 @Configuration
 @EnableJms
+@RequiredArgsConstructor
 public class ActiveMQConfig {
+    private final ActiveMQProperties properties;
 
     @Bean
-    public ActiveMQConnectionFactory connectionFactory(
-            @Value("${spring.activemq.broker-url}") String brokerUrl,
-            @Value("${spring.activemq.user}") String user,
-            @Value("${spring.activemq.password}") String password) {
+    public ActiveMQConnectionFactory connectionFactory() {
 
         ActiveMQConnectionFactory factory =
-                new ActiveMQConnectionFactory(user, password, brokerUrl);
+                new ActiveMQConnectionFactory(
+                        properties.getUser(),
+                        properties.getPassword(),
+                        properties.getBrokerUrl());
+
         factory.setTrustedPackages(List.of("org.example.dto", "org.example.client",
                 "org.example.workload_service.dto"));
         return factory;
