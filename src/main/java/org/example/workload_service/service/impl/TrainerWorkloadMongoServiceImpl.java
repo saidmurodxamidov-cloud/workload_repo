@@ -24,35 +24,46 @@ public class TrainerWorkloadMongoServiceImpl implements TrainerWorkloadService {
 
         private final TrainerWorkloadMongoRepository repository;
 
-        public void processWorkload(String idempotencyKey, TrainerWorkloadRequest request) {
-            TrainerWorkloadDocument workload = repository
-                    .findByUsername(request.getUsername())
-                    .orElseGet(() -> createNew(request));
+    public void processWorkload(String idempotencyKey, TrainerWorkloadRequest request) {
+        TrainerWorkloadDocument workload = findOrCreate(request);
 
-            if (idempotencyKey != null) {
-                if (workload.getIdempotencyKeys().contains(idempotencyKey)) {
-                    log.info("Duplicate idempotency key: {}", idempotencyKey);
-                    return;
-                }
-                workload.getIdempotencyKeys().add(idempotencyKey);
-            }
+        if (!handleIdempotencyKey(idempotencyKey, workload)) return;
 
-            String year  = String.valueOf(request.getTrainingDate().getYear());
-            String month = MonthEnum.fromInt(request.getTrainingDate().getMonthValue()).getDisplayName();
+        updateDuration(workload, request);
+        repository.save(workload);
 
-            workload.getYearsSummary().putIfAbsent(year, new HashMap<>());
-            Map<String, Integer> monthMap = workload.getYearsSummary().get(year);
-            int current = monthMap.getOrDefault(month, 0);
+        log.info("Workload updated for: {}", request.getUsername());
+    }
 
-            if (request.getActionType() == ActionType.ADD) {
-                monthMap.put(month, current + request.getDuration());
-            } else {
-                monthMap.put(month, Math.max(0, current - request.getDuration()));
-            }
+    private TrainerWorkloadDocument findOrCreate(TrainerWorkloadRequest request) {
+        return repository.findByUsername(request.getUsername())
+                .orElseGet(() -> createNew(request));
+    }
 
-            repository.save(workload);
-            log.info("Workload updated for: {}", request.getUsername());
+    private boolean handleIdempotencyKey(String idempotencyKey, TrainerWorkloadDocument workload) {
+        if (idempotencyKey == null) return true;
+        if (workload.getIdempotencyKeys().contains(idempotencyKey)) {
+            log.info("Duplicate idempotency key: {}", idempotencyKey);
+            return false;
         }
+        workload.getIdempotencyKeys().add(idempotencyKey);
+        return true;
+    }
+
+    private void updateDuration(TrainerWorkloadDocument workload, TrainerWorkloadRequest request) {
+        String year  = String.valueOf(request.getTrainingDate().getYear());
+        String month = MonthEnum.fromInt(request.getTrainingDate().getMonthValue()).getDisplayName();
+
+        workload.getYearsSummary().putIfAbsent(year, new HashMap<>());
+        Map<String, Integer> monthMap = workload.getYearsSummary().get(year);
+
+        int current = monthMap.getOrDefault(month, 0);
+        int updated = request.getActionType() == ActionType.ADD
+                ? current + request.getDuration()
+                : Math.max(0, current - request.getDuration());
+
+        monthMap.put(month, updated);
+    }
 
         private TrainerWorkloadDocument createNew(TrainerWorkloadRequest request) {
             TrainerWorkloadDocument workload = new TrainerWorkloadDocument();
