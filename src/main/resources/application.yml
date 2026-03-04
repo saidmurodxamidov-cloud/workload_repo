@@ -4,14 +4,12 @@ server:
 spring:
   application:
     name: workload-service
-
   activemq:
     broker-url: ${SPRING_ACTIVEMQ_BROKER_URL:tcp://localhost:61616}
     user: admin
     password: admin
     packages:
       trust-all: true
-
   profiles:
     active: mongo
 
@@ -62,36 +60,3 @@ logging:
   level:
     root: INFO
     org.example: DEBUG
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: jpa
-
-  datasource:
-    url: jdbc:h2:mem:trainerdb
-    driverClassName: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: update
-
-  h2:
-    console:
-      enabled: true
-
----
-
-spring:
-  config:
-    activate:
-      on-profile: mongo
-
-  data:
-    mongodb:
-      uri: mongodb://admin:password@localhost:27017/workload_db?authSource=admin
