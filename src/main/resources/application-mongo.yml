@@ -1,0 +1,4 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://admin:password@localhost:27017/workload_db?authSource=admin
