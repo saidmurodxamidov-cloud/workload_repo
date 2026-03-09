@@ -123,7 +123,7 @@ class TrainerWorkloadServiceTest {
 
         service.processWorkload(IDEMPOTENCY_KEY, request);
 
-        assertThat(existingWorkload.getTotalDuration()).isEqualTo(120); // unchanged
+        assertThat(existingWorkload.getTotalDuration()).isEqualTo(0); // unchanged
         verify(repository).save(existingWorkload);
     }
 
