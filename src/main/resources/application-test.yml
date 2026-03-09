@@ -1,0 +1,27 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
+      # ❌ REMOVE THIS LINE:
+      # - org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration
+
+  activemq:
+    broker-url: vm://localhost?broker.persistent=false&broker.useJmx=false
+    in-memory: true
+    pool:
+      enabled: false
+    packages:
+      trust-all: true
+
+  jms:
+    pub-sub-domain: false
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+spring.cloud.discovery.enabled: false

@@ -42,11 +42,14 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
                 )
                 .orElseGet(() -> createNew(request, year, month));
 
+        if (idempotencyKey != null) {
+            workload.setIdempotencyKey(idempotencyKey);
+        }
+
         if (request.getActionType() == ActionType.ADD) {
             workload.setTotalDuration(workload.getTotalDuration() + request.getDuration());
         } else {
-            if(workload.getTotalDuration() >= request.getDuration())
-                 workload.setTotalDuration(workload.getTotalDuration() - request.getDuration());
+                 workload.setTotalDuration(Math.max(0,workload.getTotalDuration() - request.getDuration()));
         }
 
         repository.save(workload);
