@@ -10,6 +10,10 @@ services:
       MONGO_INITDB_DATABASE: workload_db
     volumes:
       - mongo_data:/data/db
-
+  workload:
+    build: .
+    container_name: workload_service
+    ports:
+      - "8084:8084"
 volumes:
   mongo_data:
