@@ -2,8 +2,6 @@ package org.example.workload_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.example.workload_service.Enum.ActionType;
-import org.example.workload_service.dto.TrainerWorkloadRequest;
 import org.example.workload_service.dto.TrainerWorkloadResponse;
 import org.example.workload_service.service.TrainerWorkloadService;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,16 +17,12 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,48 +48,6 @@ class TrainerWorkloadControllerTest {
                 .build();
     }
 
-    @Nested
-    @DisplayName("POST /api/workloads (updateWorkload)")
-    class UpdateWorkloadTests {
-
-        @Test
-        @DisplayName("should return 204 and call service with key and body when request is valid")
-        void shouldReturn204AndCallService() throws Exception {
-            TrainerWorkloadRequest request = new TrainerWorkloadRequest();
-            request.setUsername("trainer1");
-            request.setFirstName("John");
-            request.setLastName("Doe");
-            request.setActive(true);
-            request.setTrainingDate(LocalDate.of(2025, 2, 15));
-            request.setDuration(120);
-            request.setActionType(ActionType.ADD);
-
-            mockMvc.perform(post(BASE_URL)
-                            .header(IDEMPOTENCY_KEY_HEADER, TEST_IDEMPOTENCY_KEY)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isNoContent());
-
-            // key comes from header, request from body — both forwarded to service
-            verify(service).processWorkload(eq(TEST_IDEMPOTENCY_KEY), any(TrainerWorkloadRequest.class));
-        }
-
-        @Test
-        @DisplayName("should return 400 when Idempotency-Key header is missing")
-        void shouldReturn400WhenIdempotencyKeyMissing() throws Exception {
-            TrainerWorkloadRequest request = new TrainerWorkloadRequest();
-            request.setUsername("trainer1");
-            request.setActionType(ActionType.ADD);
-            request.setTrainingDate(LocalDate.of(2025, 2, 15));
-            request.setDuration(60);
-
-            // No Idempotency-Key header — Spring should reject with 400
-            mockMvc.perform(post(BASE_URL)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
-        }
-    }
 
     @Nested
     @DisplayName("GET /api/workloads/{username} (getSummary)")

@@ -1,0 +1,19 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: workload-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: workload_db
+    volumes:
+      - mongo_data:/data/db
+  workload:
+    build: .
+    container_name: workload_service
+    ports:
+      - "8084:8084"
+volumes:
+  mongo_data:

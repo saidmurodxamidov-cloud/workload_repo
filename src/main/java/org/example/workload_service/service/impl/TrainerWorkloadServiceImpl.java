@@ -9,6 +9,7 @@ import org.example.workload_service.dto.TrainerWorkloadResponse;
 import org.example.workload_service.entity.TrainerWorkload;
 import org.example.workload_service.respository.TrainerWorkloadRepository;
 import org.example.workload_service.service.TrainerWorkloadService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Profile("jpa")
 @Slf4j
 public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
 
@@ -40,11 +42,14 @@ public class TrainerWorkloadServiceImpl implements TrainerWorkloadService {
                 )
                 .orElseGet(() -> createNew(request, year, month));
 
+        if (idempotencyKey != null) {
+            workload.setIdempotencyKey(idempotencyKey);
+        }
+
         if (request.getActionType() == ActionType.ADD) {
             workload.setTotalDuration(workload.getTotalDuration() + request.getDuration());
         } else {
-            if(workload.getTotalDuration() >= request.getDuration())
-                 workload.setTotalDuration(workload.getTotalDuration() - request.getDuration());
+                 workload.setTotalDuration(Math.max(0,workload.getTotalDuration() - request.getDuration()));
         }
 
         repository.save(workload);
